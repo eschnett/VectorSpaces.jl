@@ -11,5 +11,5 @@ Traits for vector spaces.
    :target: https://travis-ci.org/eschnett/VectorSpaces.jl
 .. |Build status (Appveyor)| image:: https://ci.appveyor.com/api/projects/status/qwiilic1asav32ym/branch/master?svg=true
    :target: https://ci.appveyor.com/project/eschnett/vectorspaces-jl/branch/master
-.. |Coverage Status (Coveralls)| image:: image:: https://coveralls.io/repos/github/eschnett/VectorSpaces.jl/badge.svg?branch=master
+.. |Coverage Status (Coveralls)| image:: https://coveralls.io/repos/github/eschnett/VectorSpaces.jl/badge.svg?branch=master
    :target: https://coveralls.io/github/eschnett/VectorSpaces.jl?branch=master
