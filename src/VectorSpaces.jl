@@ -1,5 +1,6 @@
 module VectorSpaces
 
+using IterTools: imap
 using Arbitrary
 using SimpleTraits
 
@@ -458,49 +459,49 @@ LinearAlgebra.norm(x::VEmpty{S}) where {S} = S(0)
 
 ################################################################################
 
-export VExp
-struct VExp{V, S} <: VectorSpace{S}
+export VComp
+struct VComp{V, S} <: VectorSpace{S}
     v::V
-    function VExp{V, S}(v::V) where {V, S}
+    function VComp{V, S}(v::V) where {V, S}
         @assert S === stype(stype(V))
         new{V, S}(v)
     end
 end
 
-function VExp(v::V) where {V <: VectorSpace}
+function VComp(v::V) where {V <: VectorSpace}
     S = stype(stype(V))
-    VExp{V, S}(v)
+    VComp{V, S}(v)
 end
 
-Base.show(io::IO, x::VExp) = print(io, "($(x.v))")
+Base.show(io::IO, x::VComp) = print(io, "($(x.v))")
 
-function Base.firstindex(x::VExp)
+function Base.firstindex(x::VComp)
     i0 = firstindex(x.v)
     li = length(x.v)
     li == 0 && return (i0, 1)
     j0 = firstindex(x.v[i0])
     (i0, j0)
 end
-function Base.lastindex(x::VExp)
+function Base.lastindex(x::VComp)
     i1 = lastindex(x.v)
     li = length(x.v)
     li == 0 && return (i1, 0)
     j1 = lastindex(x.v[i1])
     (i1, j1)
 end
-function Base.getindex(x::VExp, ij)
+function Base.getindex(x::VComp, ij)
     i = ij[1]
     j = ij[2]
     x.v[i][j]
 end
-Base.eltype(::Type{VExp{V, S}}) where {V, S} = S
-function Base.length(x::VExp)
+Base.eltype(::Type{VComp{V, S}}) where {V, S} = S
+function Base.length(x::VComp)
     li = length(x.v)
     li == 0 && return 0
     lj = length(x.v[end])
     li * lj
 end
-function Base.iterate(x::VExp)
+function Base.iterate(x::VComp)
     iti = iterate(x.v)
     iti === nothing && return nothing
     eli, sti = iti
@@ -514,7 +515,7 @@ function Base.iterate(x::VExp)
     elj, stj = itj
     elj, (iti, stj)
 end
-function Base.iterate(x::VExp, st)
+function Base.iterate(x::VComp, st)
     iti, stj = st
     eli, sti = iti
     itj = iterate(eli, stj)
@@ -529,46 +530,46 @@ function Base.iterate(x::VExp, st)
 end
 mapmap(f, x) = map(a -> map(f, a), x)
 mapmap(f, x, y) = map((a, b) -> map(f, a, b), x, y)
-Base.map(f, x::VExp) = VExp(mapmap(f, x.v))
-Base.map(f, x::VExp{V}, y::VExp{V}) where {V} = VExp(mapmap(f, x.v, y.v))
+Base.map(f, x::VComp) = VComp(mapmap(f, x.v))
+Base.map(f, x::VComp{V}, y::VComp{V}) where {V} = VComp(mapmap(f, x.v, y.v))
 
 
 
-otype(::Type{VExp{V, S}}) where {V, S} = retype(V, S)
-itype(::Type{VExp{V, S}}) where {V, S} = stype(V)
-stype(::Type{VExp{V, S}}) where {V, S} = S
-function retype(::Type{VExp{V, S}}, ::Type{T}) where {V, S, T}
+otype(::Type{VComp{V, S}}) where {V, S} = retype(V, S)
+itype(::Type{VComp{V, S}}) where {V, S} = stype(V)
+stype(::Type{VComp{V, S}}) where {V, S} = S
+function retype(::Type{VComp{V, S}}, ::Type{T}) where {V, S, T}
     VT = retype(V, retype(stype(V), T))
-    VExp{VT, T}
+    VComp{VT, T}
 end
 
-Base.zero(::Type{VExp{V, S}}) where {V, S <: Union{Number, VectorSpace}} =
-    VExp{V, S}(zero(V))
+Base.zero(::Type{VComp{V, S}}) where {V, S <: Union{Number, VectorSpace}} =
+    VComp{V, S}(zero(V))
 
-Base. +(x::VExp{V, S}) where {V, S} = VExp{V, S}(mapmap(+, x.v))
-Base. -(x::VExp{V, S}) where {V, S} = VExp{V, S}(mapmap(-, x.v))
-Base. *(a::S, x::VExp{V, S}) where {V, S} = VExp{V, S}(mapmap(c->a*c, x.v))
-Base. \(a::S, x::VExp{V, S}) where {V, S <: Union{AbstractFloat, Rational}} =
-    VExp{V, S}(mapmap(c->a\c, x.v))
-Base. *(x::VExp{V, S}, a::S) where {V, S} = VExp{V, S}(mapmap(c->c*a, x.v))
-Base. /(x::VExp{V, S}, a::S) where {V, S <: Union{AbstractFloat, Rational}} =
-    VExp{V, S}(mapmap(c->c/a, x.v))
+Base. +(x::VComp{V, S}) where {V, S} = VComp{V, S}(mapmap(+, x.v))
+Base. -(x::VComp{V, S}) where {V, S} = VComp{V, S}(mapmap(-, x.v))
+Base. *(a::S, x::VComp{V, S}) where {V, S} = VComp{V, S}(mapmap(c->a*c, x.v))
+Base. \(a::S, x::VComp{V, S}) where {V, S <: Union{AbstractFloat, Rational}} =
+    VComp{V, S}(mapmap(c->a\c, x.v))
+Base. *(x::VComp{V, S}, a::S) where {V, S} = VComp{V, S}(mapmap(c->c*a, x.v))
+Base. /(x::VComp{V, S}, a::S) where {V, S <: Union{AbstractFloat, Rational}} =
+    VComp{V, S}(mapmap(c->c/a, x.v))
 
-Base. +(x::VExp{V, S}, y::VExp{V, S}) where {V, S} =
-    VExp{V, S}(mapmap(+, x.v, y.v))
-Base. -(x::VExp{V, S}, y::VExp{V, S}) where {V, S} =
-    VExp{V, S}(mapmap(-, x.v, y.v))
+Base. +(x::VComp{V, S}, y::VComp{V, S}) where {V, S} =
+    VComp{V, S}(mapmap(+, x.v, y.v))
+Base. -(x::VComp{V, S}, y::VComp{V, S}) where {V, S} =
+    VComp{V, S}(mapmap(-, x.v, y.v))
 
 
 
-LinearAlgebra. ⋅(x::VExp{V, S}, y::VExp{V, S}) where {V, S} =
+LinearAlgebra. ⋅(x::VComp{V, S}, y::VComp{V, S}) where {V, S} =
     sum(map(⋅, x.v, y.v))::S
 
 
 
-incomplete_norm(x::VExp{V, S}) where {V, S <: Number} =
+incomplete_norm(x::VComp{V, S}) where {V, S <: Number} =
     sum(map(incomplete_norm, x.v))::S
-LinearAlgebra.norm(x::VExp{V, S}) where {V, S <: AbstractFloat} =
+LinearAlgebra.norm(x::VComp{V, S}) where {V, S <: AbstractFloat} =
     sqrt(incomplete_norm(x))::S
 
 
@@ -757,8 +758,6 @@ LinearAlgebra. ⋅(x::VComplex{S}, y::VComplex{S}) where
         {D, S <: Union{Number, VectorSpace}} =
     (conj(x.re) * y.re + conj(x.im) * y.im)::S
 
-
-
 incomplete_norm(x::VComplex{S}) where {S <: Union{Number, VectorSpace}} =
     (abs2(x.re) + abs2(x.im))::S
 LinearAlgebra.norm(x::VComplex{S}) where
@@ -768,26 +767,295 @@ LinearAlgebra.norm(x::VComplex{S}) where
 
 
 export VQuaternion
-struct VQuaternion{S}
-    val::VExp{VComplex{VComplex{S}}}
+struct VQuaternion{S} <: VectorSpace{S}
+    val::VComp{VComplex{VComplex{S}}}
 end
 
 function Base.show(io::IO, x::VQuaternion{S}) where {S}
     print(io, x.val)
 end
 
+Base.firstindex(x::VQuaternion) = firstindex(x.val)
+Base.lastindex(x::VQuaternion) = lastindex(x.val)
+Base.getindex(x::VQuaternion, i) = getindex(x.val, i)
+Base.eltype(::Type{VQuaternion{S}}) where {S} = S
+Base.length(x::VQuaternion) = length(x.val)
+Base.iterate(x::VQuaternion) = iterate(x.val)
+Base.iterate(x::VQuaternion, st) = iterate(x.val, st)
+Base.map(f, x::VQuaternion) = VQuaternion(map(f, x.val))
+Base.map(f, x::VQuaternion, y::VQuaternion) = VQuaternion(map(f, x.val, y.val))
+
+Base.isequal(x::VQuaternion, y::VQuaternion) = isequal(x.val.v, y.val.v)
+Base. ==(x::VQuaternion, y::VQuaternion) = x.val.v == y.val.v
+
+
+
+function Arbitrary.arbitrary(::Type{VQuaternion{T}}, ast::ArbState) where {T}
+    imap(x -> VQuaternion(VComp(x)), arbitrary(VComplex{VComplex{T}}, ast))
+end
+
+
+
+stype(::Type{VQuaternion{S}}) where {S} = S
+retype(::Type{VQuaternion{S}}, ::Type{T}) where {S, T} = VQuaternion{T}
+
+function Base.zero(::Type{VQuaternion{S}}) where {S}
+    VQuaternion(VComp(zero(VComplex{VComplex{S}})))
+end
+function Base.one(::Type{VQuaternion{S}}) where {S}
+    VQuaternion(VComp(one(VComplex{VComplex{S}})))
+end
+
+function Base. +(x::VQuaternion{S}) where {S}
+    VQuaternion(+x.val)
+end
+function Base. -(x::VQuaternion{S}) where {S}
+    VQuaternion(-x.val)
+end
+function Base.conj(x::VQuaternion{S}) where {S}
+    VQuaternion(VComp(conj(x.val.v)))
+end
+function Base.abs2(x::VQuaternion{S}) where {S}
+    abs2(x.val.v)::S
+end
+function Base.abs(x::VQuaternion{S}) where {S}
+    abs(x.val.v)::S
+end
+function Base.inv(x::VQuaternion{S}) where {S}
+    VQuaternion(VComp(inv(x.val.v)))
+end
+
+function Base. +(x::VQuaternion{S}, y::VQuaternion{S}) where {S}
+    VQuaternion(x.val + y.val)
+end
+function Base. -(x::VQuaternion{S}, y::VQuaternion{S}) where {S}
+    VQuaternion(x.val - y.val)
+end
+
+function Base. *(a::S, y::VQuaternion{S}) where {S}
+    VQuaternion(a * y.val)
+end
+function Base. *(x::VQuaternion{S}, b::S) where {S}
+    VQuaternion(x.val * b)
+end
+function Base. \(a::S, y::VQuaternion{S}) where {S}
+    VQuaternion(a \ y.val)
+end
+function Base. /(x::VQuaternion{S}, b::S) where {S}
+    VQuaternion(x.val / b)
+end
+
+function Base. *(x::VQuaternion{S}, y::VQuaternion{S}) where {S}
+    VQuaternion(VComp(x.val.v * y.val.v))
+end
+function Base. /(x::VQuaternion{S}, y::VQuaternion{S}) where {S}
+    VQuaternion(VComp(x.val.v / y.val.v))
+end
+
+LinearAlgebra. ⋅(x::VQuaternion{S}, y::VQuaternion{S}) where
+        {D, S <: Union{Number, VectorSpace}} =
+    (x.val ⋅ y.val)::S
+
+incomplete_norm(x::VQuaternion{S}) where {S <: Union{Number, VectorSpace}} =
+    incomplete_norm(x.val)::S
+LinearAlgebra.norm(x::VQuaternion{S}) where
+        {S <: Union{AbstractFloat, VectorSpace}} =
+    norm(x.val)::S
+
 
 
 export VOctonion
-struct VOctonion{S}
-    val::VExp{VComplex{VQuaternion{S}}}
+struct VOctonion{S} <: VectorSpace{S}
+    val::VComp{VComplex{VQuaternion{S}}}
 end
+
+function Base.show(io::IO, x::VOctonion{S}) where {S}
+    print(io, x.val)
+end
+
+Base.firstindex(x::VOctonion) = firstindex(x.val)
+Base.lastindex(x::VOctonion) = lastindex(x.val)
+Base.getindex(x::VOctonion, i) = getindex(x.val, i)
+Base.eltype(::Type{VOctonion{S}}) where {S} = S
+Base.length(x::VOctonion) = length(x.val)
+Base.iterate(x::VOctonion) = iterate(x.val)
+Base.iterate(x::VOctonion, st) = iterate(x.val, st)
+Base.map(f, x::VOctonion) = VOctonion(map(f, x.val))
+Base.map(f, x::VOctonion, y::VOctonion) = VOctonion(map(f, x.val, y.val))
+
+Base.isequal(x::VOctonion, y::VOctonion) = isequal(x.val.v, y.val.v)
+Base. ==(x::VOctonion, y::VOctonion) = x.val.v == y.val.v
+
+
+
+function Arbitrary.arbitrary(::Type{VOctonion{T}}, ast::ArbState) where {T}
+    imap(x -> VOctonion(VComp(x)), arbitrary(VComplex{VQuaternion{T}}, ast))
+end
+
+
+
+stype(::Type{VOctonion{S}}) where {S} = S
+retype(::Type{VOctonion{S}}, ::Type{T}) where {S, T} = VOctonion{T}
+
+function Base.zero(::Type{VOctonion{S}}) where {S}
+    VOctonion(VComp(zero(VComplex{VQuaternion{S}})))
+end
+function Base.one(::Type{VOctonion{S}}) where {S}
+    VOctonion(VComp(one(VComplex{VQuaternion{S}})))
+end
+
+function Base. +(x::VOctonion{S}) where {S}
+    VOctonion(+x.val)
+end
+function Base. -(x::VOctonion{S}) where {S}
+    VOctonion(-x.val)
+end
+function Base.conj(x::VOctonion{S}) where {S}
+    VOctonion(VComp(conj(x.val.v)))
+end
+function Base.abs2(x::VOctonion{S}) where {S}
+    abs2(x.val.v)::S
+end
+function Base.abs(x::VOctonion{S}) where {S}
+    abs(x.val.v)::S
+end
+function Base.inv(x::VOctonion{S}) where {S}
+    VOctonion(VComp(inv(x.val.v)))
+end
+
+function Base. +(x::VOctonion{S}, y::VOctonion{S}) where {S}
+    VOctonion(x.val + y.val)
+end
+function Base. -(x::VOctonion{S}, y::VOctonion{S}) where {S}
+    VOctonion(x.val - y.val)
+end
+
+function Base. *(a::S, y::VOctonion{S}) where {S}
+    VOctonion(a * y.val)
+end
+function Base. *(x::VOctonion{S}, b::S) where {S}
+    VOctonion(x.val * b)
+end
+function Base. \(a::S, y::VOctonion{S}) where {S}
+    VOctonion(a \ y.val)
+end
+function Base. /(x::VOctonion{S}, b::S) where {S}
+    VOctonion(x.val / b)
+end
+
+function Base. *(x::VOctonion{S}, y::VOctonion{S}) where {S}
+    VOctonion(VComp(x.val.v * y.val.v))
+end
+function Base. /(x::VOctonion{S}, y::VOctonion{S}) where {S}
+    VOctonion(VComp(x.val.v / y.val.v))
+end
+
+LinearAlgebra. ⋅(x::VOctonion{S}, y::VOctonion{S}) where
+        {D, S <: Union{Number, VectorSpace}} =
+    (x.val ⋅ y.val)::S
+
+incomplete_norm(x::VOctonion{S}) where {S <: Union{Number, VectorSpace}} =
+    incomplete_norm(x.val)::S
+LinearAlgebra.norm(x::VOctonion{S}) where
+        {S <: Union{AbstractFloat, VectorSpace}} =
+    norm(x.val)::S
 
 
 
 export VSedenion
-struct VSedenion{S}
-    val::VExp{VComplex{VOctonion{S}}}
+struct VSedenion{S} <: VectorSpace{S}
+    val::VComp{VComplex{VOctonion{S}}}
 end
+
+function Base.show(io::IO, x::VSedenion{S}) where {S}
+    print(io, x.val)
+end
+
+Base.firstindex(x::VSedenion) = firstindex(x.val)
+Base.lastindex(x::VSedenion) = lastindex(x.val)
+Base.getindex(x::VSedenion, i) = getindex(x.val, i)
+Base.eltype(::Type{VSedenion{S}}) where {S} = S
+Base.length(x::VSedenion) = length(x.val)
+Base.iterate(x::VSedenion) = iterate(x.val)
+Base.iterate(x::VSedenion, st) = iterate(x.val, st)
+Base.map(f, x::VSedenion) = VSedenion(map(f, x.val))
+Base.map(f, x::VSedenion, y::VSedenion) = VSedenion(map(f, x.val, y.val))
+
+Base.isequal(x::VSedenion, y::VSedenion) = isequal(x.val.v, y.val.v)
+Base. ==(x::VSedenion, y::VSedenion) = x.val.v == y.val.v
+
+
+
+function Arbitrary.arbitrary(::Type{VSedenion{T}}, ast::ArbState) where {T}
+    imap(x -> VSedenion(VComp(x)), arbitrary(VComplex{VOctonion{T}}, ast))
+end
+
+
+
+stype(::Type{VSedenion{S}}) where {S} = S
+retype(::Type{VSedenion{S}}, ::Type{T}) where {S, T} = VSedenion{T}
+
+function Base.zero(::Type{VSedenion{S}}) where {S}
+    VSedenion(VComp(zero(VComplex{VOctonion{S}})))
+end
+function Base.one(::Type{VSedenion{S}}) where {S}
+    VSedenion(VComp(one(VComplex{VOctonion{S}})))
+end
+
+function Base. +(x::VSedenion{S}) where {S}
+    VSedenion(+x.val)
+end
+function Base. -(x::VSedenion{S}) where {S}
+    VSedenion(-x.val)
+end
+function Base.conj(x::VSedenion{S}) where {S}
+    VSedenion(VComp(conj(x.val.v)))
+end
+function Base.abs2(x::VSedenion{S}) where {S}
+    abs2(x.val.v)::S
+end
+function Base.abs(x::VSedenion{S}) where {S}
+    abs(x.val.v)::S
+end
+function Base.inv(x::VSedenion{S}) where {S}
+    VSedenion(VComp(inv(x.val.v)))
+end
+
+function Base. +(x::VSedenion{S}, y::VSedenion{S}) where {S}
+    VSedenion(x.val + y.val)
+end
+function Base. -(x::VSedenion{S}, y::VSedenion{S}) where {S}
+    VSedenion(x.val - y.val)
+end
+
+function Base. *(a::S, y::VSedenion{S}) where {S}
+    VSedenion(a * y.val)
+end
+function Base. *(x::VSedenion{S}, b::S) where {S}
+    VSedenion(x.val * b)
+end
+function Base. \(a::S, y::VSedenion{S}) where {S}
+    VSedenion(a \ y.val)
+end
+function Base. /(x::VSedenion{S}, b::S) where {S}
+    VSedenion(x.val / b)
+end
+
+function Base. *(x::VSedenion{S}, y::VSedenion{S}) where {S}
+    VSedenion(VComp(x.val.v * y.val.v))
+end
+function Base. /(x::VSedenion{S}, y::VSedenion{S}) where {S}
+    VSedenion(VComp(x.val.v / y.val.v))
+end
+
+LinearAlgebra. ⋅(x::VSedenion{S}, y::VSedenion{S}) where
+        {D, S <: Union{Number, VectorSpace}} =
+    (x.val ⋅ y.val)::S
+
+incomplete_norm(x::VSedenion{S}) where {S <: Union{Number, VectorSpace}} =
+    incomplete_norm(x.val)::S
+LinearAlgebra.norm(x::VSedenion{S}) where
+        {S <: Union{AbstractFloat, VectorSpace}} =
+    norm(x.val)::S
 
 end
