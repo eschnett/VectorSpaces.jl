@@ -1,8 +1,7 @@
 module VectorSpaces
 
+using Arbitrary
 using SimpleTraits
-
-struct Private end
 
 
 
@@ -25,7 +24,7 @@ function isvectorspace(::Type{V}) where {V <: VectorSpace}
         VS === V || return false
         # Constructors
         z = zero(V)::V
-        e1 = one(V)::V
+        e1 = ones(V)::V
         # Collection properties
         @assert eltype(V) === S
         l = length(e1)
@@ -93,6 +92,14 @@ export stype, retype
 export linear
 export ⋅, incomplete_norm, partial_mean, norm, mean
 
+function Base.zeros(::Type{V}) where {V <: VectorSpace}
+    S = stype(V)
+    map(_ -> zero(S), zero(V))::V
+end
+function Base.ones(::Type{V}) where {V <: VectorSpace}
+    S = stype(V)
+    map(_ -> one(S), zero(V))::V
+end
 function linear(::Type{V}) where {V <: VectorSpace}
     S = stype(V)
     idx = 0
@@ -151,12 +158,11 @@ end
 stype(::Type{Vec{D, S}}) where {D, S} = S
 retype(::Type{Vec{D, S}}, ::Type{T}) where {D, S, T} = Vec{D, T}
 
-Base.zero(::Type{Vec{D, S}}) where {D, S <: Union{Number, VectorSpace}} =
-    Vec{D, S}(ntuple(_->zero(S), D))
-Base.one(::Type{Vec{D, S}}) where {D, S <: Union{Number, VectorSpace}} =
-    Vec{D, S}(ntuple(_->one(S), D))
+
 
 # This needs to accept either a Number or a VectorSpace
+Base.zero(::Type{Vec{D, S}}) where {D, S <: Union{Number, VectorSpace}} =
+    Vec{D, S}(ntuple(_->zero(S), D))
 Base. +(x::Vec{D, S}) where {D, S <: Union{Number, VectorSpace}} =
     Vec{D, S}(map(+, x.elts))
 Base. -(x::Vec{D, S}) where {D, S <: Union{Number, VectorSpace}} =
@@ -362,9 +368,6 @@ retype(::Type{VProd{V1, V2, S}}, ::Type{T}) where {V1, V2, S, T} =
 Base.zero(::Type{VProd{V1, V2, S}}) where
         {V1, V2, S <: Union{Number, VectorSpace}} =
     VProd{V1, V2, S}(zero(V1), zero(V2))
-Base.one(::Type{VProd{V1, V2, S}}) where
-        {V1, V2, S <: Union{Number, VectorSpace}} =
-    VProd{V1, V2, S}(one(V1), one(V2))
 
 Base. +(x::VProd{V1, V2, S}) where {V1, V2, S} =
     VProd{V1, V2, S}(+x.v1, +x.v2)
@@ -430,8 +433,6 @@ stype(::Type{VEmpty{S}}) where {S} = S
 retype(::Type{VEmpty{S}}, ::Type{T}) where {S, T} = VEmpty{T}
 
 Base.zero(::Type{VEmpty{S}}) where {S <: Union{Number, VectorSpace}} =
-    VEmpty{S}()
-Base.one(::Type{VEmpty{S}}) where {S <: Union{Number, VectorSpace}} =
     VEmpty{S}()
 
 Base. +(x::VEmpty{S}) where {S} = VEmpty{S}()
@@ -543,8 +544,6 @@ end
 
 Base.zero(::Type{VExp{V, S}}) where {V, S <: Union{Number, VectorSpace}} =
     VExp{V, S}(zero(V))
-Base.one(::Type{VExp{V, S}}) where {V, S <: Union{Number, VectorSpace}} =
-    VExp{V, S}(one(V))
 
 Base. +(x::VExp{V, S}) where {V, S} = VExp{V, S}(mapmap(+, x.v))
 Base. -(x::VExp{V, S}) where {V, S} = VExp{V, S}(mapmap(-, x.v))
@@ -612,7 +611,6 @@ stype(::Type{VUnit{S}}) where {S} = S
 retype(::Type{VUnit{S}}, ::Type{T}) where {S, T} = VUnit{T}
 
 Base.zero(::Type{VUnit{S}}) where {S} = VUnit{S}(zero(S))
-Base.one(::Type{VUnit{S}}) where {S} = VUnit{S}(one(S))
 
 Base. +(x::VUnit{S}) where {S<:Number} = VUnit{S}(+x.elt)
 Base. -(x::VUnit{S}) where {S<:Number} = VUnit{S}(-x.elt)
@@ -640,5 +638,156 @@ LinearAlgebra. ⋅(x::VUnit{S}, y::VUnit{S}) where {S<:Number} =
 incomplete_norm(x::VUnit{S}) where {S<:Number} = (abs(x.elt) ^ 2)::S
 LinearAlgebra.norm(x::VUnit{S}) where {S<:AbstractFloat} =
     sqrt(incomplete_norm(x))::S
+
+
+
+################################################################################
+
+# See the Cayley–Dickson construction
+# <https://en.wikipedia.org/wiki/Cayley–Dickson_construction>
+export VComplex
+struct VComplex{S} <: VectorSpace{S}
+    re::S
+    im::S
+end
+
+function Base.show(io::IO, x::VComplex{S}) where {S}
+    print(io, "($(x.re),$(x.im))")
+end
+
+Base.firstindex(x::VComplex) = firstindex((x.re, x.im))
+Base.lastindex(x::VComplex) = lastindex((x.re, x.im))
+Base.getindex(x::VComplex, i) = getindex((x.re, x.im), i)
+Base.eltype(::Type{VComplex{S}}) where {S} = S
+Base.length(x::VComplex) = length((x.re, x.im))
+Base.iterate(x::VComplex) = iterate((x.re, x.im))
+Base.iterate(x::VComplex, st) = iterate((x.re, x.im), st)
+function Base.map(f, x::VComplex)
+    res = map(f, (x.re, x.im))
+    R = eltype(res)
+    VComplex{R}(res[1], res[2])
+end
+function Base.map(f, x::VComplex, y::VComplex)
+    res = map(f, (x.re, x.im), (y.re, y.im))
+    R = eltype(res)
+    VComplex{R}(res[1], res[2])
+end
+
+function Base.isequal(x::VComplex{S}, y::VComplex{S}) where {S}
+    isequal(x.re, y.re) && isequal(x.im, y.im)
+end
+function Base. ==(x::VComplex{S}, y::VComplex{S}) where {S}
+    x.re == y.re && x.im == y.im
+end
+
+
+
+function mkcomplex(::Type{T}, arb::Iterators.Stateful) where {T}
+    re = popfirst!(arb)::T
+    im = popfirst!(arb)::T
+    VComplex{T}(re, im)
+end
+function Arbitrary.arbitrary(::Type{VComplex{T}}, ast::ArbState) where {T}
+    iter = Iterators.Stateful(arbitrary(T, ast))
+    Generate{VComplex{T}}(() -> mkcomplex(T, iter))
+end
+
+
+
+stype(::Type{VComplex{S}}) where {S} = S
+retype(::Type{VComplex{S}}, ::Type{T}) where {S, T} = VComplex{T}
+
+function Base.zero(::Type{VComplex{S}}) where {S}
+    VComplex{S}(zero(S), zero(S))
+end
+function Base.one(::Type{VComplex{S}}) where {S}
+    VComplex{S}(one(S), zero(S))
+end
+
+function Base. +(x::VComplex{S}) where {S}
+    VComplex{S}(+x.re, +x.im)
+end
+function Base. -(x::VComplex{S}) where {S}
+    VComplex{S}(-x.re, -x.im)
+end
+function Base.conj(x::VComplex{S}) where {S}
+    VComplex{S}(conj(x.re), -x.im)
+end
+function Base.abs2(x::VComplex{S}) where {S}
+    (conj(x) * x).re::S
+end
+function Base.abs(x::VComplex{S}) where {S}
+    sqrt(abs2(x))::S
+end
+function Base.inv(x::VComplex{S}) where {S}
+    conj(x) / abs2(x)
+end
+
+function Base. +(x::VComplex{S}, y::VComplex{S}) where {S}
+    VComplex{S}(x.re + y.re, x.im + y.im)
+end
+function Base. -(x::VComplex{S}, y::VComplex{S}) where {S}
+    VComplex{S}(x.re - y.re, x.im - y.im)
+end
+
+function Base. *(a::S, y::VComplex{S}) where {S}
+    VComplex{S}(a * y.re, a * y.im)
+end
+function Base. *(x::VComplex{S}, b::S) where {S}
+    VComplex{S}(x.re * b, x.im * b)
+end
+function Base. \(a::S, y::VComplex{S}) where {S}
+    VComplex{S}(a \ y.re, a \ y.im)
+end
+function Base. /(x::VComplex{S}, b::S) where {S}
+    VComplex{S}(x.re / b, x.im / b)
+end
+
+# Note: Do not change the order of arguments, as multiplication might
+# not be commutative
+function Base. *(x::VComplex{S}, y::VComplex{S}) where {S}
+    VComplex{S}(x.re * y.re - conj(y.im) * x.im,
+                y.im * x.re + x.im * conj(y.re))
+end
+function Base. /(x::VComplex{S}, y::VComplex{S}) where {S}
+    x * inv(y)
+end
+
+LinearAlgebra. ⋅(x::VComplex{S}, y::VComplex{S}) where
+        {D, S <: Union{Number, VectorSpace}} =
+    (conj(x.re) * y.re + conj(x.im) * y.im)::S
+
+
+
+incomplete_norm(x::VComplex{S}) where {S <: Union{Number, VectorSpace}} =
+    (abs2(x.re) + abs2(x.im))::S
+LinearAlgebra.norm(x::VComplex{S}) where
+        {S <: Union{AbstractFloat, VectorSpace}} =
+    sqrt(incomplete_norm(x))::S
+
+
+
+export VQuaternion
+struct VQuaternion{S}
+    val::VExp{VComplex{VComplex{S}}}
+end
+
+function Base.show(io::IO, x::VQuaternion{S}) where {S}
+    print(io, x.val)
+end
+
+
+
+export VOctonion
+struct VOctonion{S}
+    val::VExp{VComplex{VQuaternion{S}}}
+end
+
+
+
+export VSedenion
+struct VSedenion{S}
+    val::VExp{VComplex{VOctonion{S}}}
+end
 
 end
