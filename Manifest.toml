@@ -2,7 +2,7 @@
 deps = ["IterTools", "Random", "Test"]
 git-tree-sha1 = "65cfe210c23577fbb0cec1ac7e12bf92aaf42851"
 repo-rev = "master"
-repo-url = "git@github.com:eschnett/Arbitrary.jl.git"
+repo-url = "https://github.com/eschnett/Arbitrary.jl.git"
 uuid = "c368a928-aaed-11e8-343e-9173ade0df7b"
 version = "0.1.1"
 
