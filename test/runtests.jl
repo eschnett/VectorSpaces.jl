@@ -111,6 +111,8 @@ end
 
     for (a, b, c) in take(zip(as, bs, cs), 100)
 
+        @test length(a) == 2
+
         # Commutativity
         @test isequal(a + b, b + a)
         # Associativity
@@ -164,6 +166,8 @@ end
 
     for (a, b, c) in take(zip(as, bs, cs), 100)
 
+        @test length(a) == 4
+
         # Commutativity
         @test isequal(a + b, b + a)
         # Associativity
@@ -214,6 +218,8 @@ end
     cs = arbitrary(OR)
 
     for (a, b, c) in take(zip(as, bs, cs), 100)
+
+        @test length(a) == 8
 
         # Commutativity
         @test isequal(a + b, b + a)
@@ -266,6 +272,8 @@ end
     cs = arbitrary(SR)
 
     for (a, b, c) in take(zip(as, bs, cs), 100)
+
+        @test length(a) == 16
 
         # Commutativity
         @test isequal(a + b, b + a)
