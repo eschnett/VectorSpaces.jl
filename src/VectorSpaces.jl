@@ -1,7 +1,9 @@
 module VectorSpaces
 
-using IterTools: imap
+using Base.Cartesian
 using Arbitrary
+using Combinatorics: levicivita, permutations
+using IterTools: imap
 using SimpleTraits
 
 
@@ -152,6 +154,15 @@ end
 function Base.map(f, x::Vec{D}, y::Vec{D}) where {D}
     relts = map(f, x.elts, y.elts)
     Vec{D, eltype(relts)}(relts)
+end
+
+Base.isequal(x::Vec{D}, y::Vec{D}) where {D} = isequal(x.elts, y.elts)
+Base. ==(x::Vec{D}, y::Vec{D}) where {D} = x.elts == y.elts
+
+
+
+function Arbitrary.arbitrary(::Type{Vec{D, S}}, ast::ArbState) where {D, S}
+    imap(x -> Vec{D, S}(x), arbitrary(NTuple{D, S}, ast))
 end
 
 
@@ -1057,5 +1068,284 @@ incomplete_norm(x::VSedenion{S}) where {S <: Union{Number, VectorSpace}} =
 LinearAlgebra.norm(x::VSedenion{S}) where
         {S <: Union{AbstractFloat, VectorSpace}} =
     norm(x.val)::S
+
+
+
+
+################################################################################
+
+# dim   rank   elems
+
+#   0      0       1
+
+#   1      0       1
+#   1      1       1
+
+#   2      0       1
+#   2      1       2
+#   2      2       1
+
+#   3      0       1
+#   3      1       3
+#   3      2       3
+#   3      3       1
+
+#   4      0       1
+#   4      1       4
+#   4      2       6
+#   4      3       4
+#   4      4       1
+
+#   5      0       1
+#   5      1       5
+#   5      2      10
+#   5      3      10
+#   5      4       5
+#   5      5       1
+
+#   6      0       1
+#   6      1       6
+#   6      2      15
+#   6      3      20
+#   6      4      15
+#   6      5       6
+#   6      6       1
+
+nelems(d::Int, n::Int) = binomial(d, n)
+
+export Form
+struct Form{D, N, S, L} <: VectorSpace{S}
+    elts::Vec{L, S}
+
+    function Form{D, N, S, L}() where {D, N, S, L}
+        @assert L == nelems(D, N)
+        new{D, N, S, L}()
+    end
+    function Form{D, N, S}() where {D, N, S}
+        Form{D, N, S, nelems(D, N)}()
+    end
+    function Form{D, N}() where {D, N}
+        Form{D, N, Missing}()
+    end
+
+    function Form{D, N, S, L}(elts::Vec{L, S}) where {D, N, S, L}
+        @assert L == nelems(D, N)
+        new{D, N, S, L}(elts)
+    end
+    function Form{D, N, S}(elts::Vec{L, S}) where {D, N, S, L}
+        Form{D, N, S, L}(elts)
+    end
+    function Form{D, N}(elts::Vec{L, S}) where {D, N, S, L}
+        Form{D, N, S, L}(elts)
+    end
+end
+
+Base.firstindex(x::Form) = firstindex(x.elts)
+Base.lastindex(x::Form) = lastindex(x.elts)
+Base.getindex(x::Form, i) = x.elts[i]
+# Base.IteratorSize(::Type{Form{D, S}}) where {D, S} = HasLength()
+# Base.IteratorEltype(::Type{Form{D, S}}) where {D, S} = HasEltype()
+Base.eltype(::Type{Form{D, N, S}}) where {D, N, S} = S
+# Base.size(x::Form) = (length(x), )
+Base.length(x::Form) = length(x.elts)
+Base.iterate(x::Form) = iterate(x.elts)
+Base.iterate(x::Form, st) = iterate(x.elts, st)
+function Base.map(f, x::Form{D, N}) where {D, N}
+    relts = map(f, x.elts)
+    R = eltype(relts)
+    Form{D, N, R}(relts)
+end
+function Base.map(f, x::Form{D, N}, y::Form{D, N}) where {D, N}
+    relts = map(f, x.elts, y.elts)
+    Form{D, N, eltype(relts)}(relts)
+end
+
+Base.isequal(x::Form{D, N}, y::Form{D, N}) where {D, N} =
+    isequal(x.elts, y.elts)
+Base. ==(x::Form{D, N}, y::Form{D, N}) where {D, N} = x.elts == y.elts
+
+
+
+function Arbitrary.arbitrary(::Type{Form{D, N, S, L}}, ast::ArbState) where {
+        D, N, S, L}
+    ET = Vec{L, S}
+    VT = Form{D, N, S, L}
+    imap(x -> VT(x), arbitrary(ET, ast))
+end
+function Arbitrary.arbitrary(::Type{<: Form{D, N, S}}, ast::ArbState) where {
+        D, N, S}
+    arbitrary(Form{D, N, S, nelems(D, N)})
+end
+
+
+
+stype(::Type{<: Form{D, N, S}}) where {D, N, S} = S
+retype(::Type{Form{D, N, S, L}}, ::Type{T}) where {D, N, S, L, T} =
+    Form{D, N, T, L}
+
+
+
+# This needs to accept either a Number or a VectorSpace
+Base.zero(::Type{<: Form{D, N, S}}) where {
+        D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(zero(Vec{nelems(D, N), S}))
+Base. +(x::Form{D, N, S}) where {D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(+ x.elts)
+Base. -(x::Form{D, N, S}) where {D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(- x.elts)
+Base. *(a::S, x::Form{D, N, S}) where {D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(a * x.elts)
+Base. \(a::S, x::Form{D, N, S}) where
+        {D, N, S <: Union{AbstractFloat, Rational, VectorSpace}} =
+    Form{D, N, S}(a \ x.elts)
+Base. *(x::Form{D, N, S}, a::S) where {D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(x.elts * a)
+Base. /(x::Form{D, N, S}, a::S) where
+        {D, N, S <: Union{AbstractFloat, Rational, VectorSpace}} =
+    Form{D, N, S}(x.elts / a)
+
+Base. +(x::Form{D, N, S}, y::Form{D, N, S}) where {
+        D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(x.elts + y.elts)
+Base. -(x::Form{D, N, S}, y::Form{D, N, S}) where {
+        D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(x.elts - y.elts)
+
+Base.one(::Type{<: Form{D, N, S}}) where {
+        D, N, S <: Union{Number, VectorSpace}} =
+    Form{D, N, S}(zero(Vec{nelems(D, N), S}))
+
+
+
+# multi-indices range 0:D, linear indices range 1:L
+const linear2multi = Dict{Tuple{Int, Int}, Any}()
+const multi2linear = Dict{Tuple{Int, Int}, Any}()
+
+function l2m(ms::Vector{NTuple{N, Int}}, l::Int)::NTuple{N, Int} where {N}
+    ms[l]
+end
+
+function m2l(ls::Array{Int, N}, m::NTuple{N, Int})::Tuple{Int, Int} where {N}
+    sl = ls[CartesianIndex(map(i->i+1, m))]
+    sl == 0 && return 0, 0
+    return sign(sl), abs(sl)
+end
+
+function makel2m(::Val{D}, ::Val{N}) where {D, N}
+    multi = Vector{NTuple{N, Int}}()
+    for ind in CartesianIndices(ntuple(_->D, N))
+        m = map(i->i-1, ind.I)::NTuple{N, Int}
+        ismono = true
+        for n in 2:N
+            ismono &= m[n] > m[n-1]
+        end
+        if ismono
+            push!(multi, m)
+        end
+    end
+    @assert length(multi) == nelems(D, N)
+    multi
+end
+
+function makem2l(::Val{D}, ::Val{N}) where {D, N}
+    ms = linear2multi[(D, N)]::Vector{NTuple{N, Int}}
+    linear = zeros(Int, ntuple(_->D, N))
+    for (l, m) in enumerate(ms)
+        for p in permutations(collect(1:N))
+            s = levicivita(p)
+            m′ = m[p]::NTuple{N, Int}
+            @assert abs(s) == 1
+            linear[CartesianIndex(map(i->i+1, m′))] = s * l
+        end
+    end
+    linear
+end
+
+function checklm(::Val{D}, ::Val{N}) where {D, N}
+    ms = linear2multi[(D, N)]::Vector{NTuple{N, Int}}
+    ls = multi2linear[(D, N)]::Array{Int, N}
+    L = length(ms)
+    for l in 1:L
+        m = l2m(ms, l)
+        @assert all(i >= 0 && i <= D for i in m)
+        s′, l′ = m2l(ls, m)
+        @assert s′ == 1
+        @assert l′ == l
+    end
+    for ind in CartesianIndices(ls)
+        m = map(i->i-1, ind.I)::NTuple{N, Int}
+        s, l = m2l(ls, m)
+        if s == 0
+            @assert l == 0
+        else
+            @assert l >= 1 && l <= L
+            m′ = l2m(ms, l)
+            @assert [m′...] == sort([m...])
+        end
+    end
+end
+
+for D in 0:6, N in 0:D
+    linear2multi[(D, N)] = makel2m(Val(D), Val(N))
+    multi2linear[(D, N)] = makem2l(Val(D), Val(N))
+    checklm(Val(D), Val(N))
+end
+
+
+
+export formindex
+@generated function formindex(x::Form{D, N, S}, is::NTuple{N, Int})::S where {
+        D, N, S}
+    ls = multi2linear[(D, N)]::Array{Int, N}
+    quote
+        $(Expr(:meta, :inline))
+        s, l = m2l($ls, is)
+        s == 0 && return zero(S)
+        y = @inbounds x.elts[l]
+        s >= 0 ? y : -y
+    end
+end
+
+
+
+# Hodge ∗ ast
+# inner product
+
+
+
+export ∧
+# TODO: Number is not enough -- need Union{AbstractFloat, Rational}.
+# What about Complex? Matrix?
+@generated function ∧(x::Form{D, N1, S}, y::Form{D, N2, S}) where {
+        D, N1, N2, S <: Union{Number, Form}}
+    N = N1 + N2
+    @assert N <= D
+    L = nelems(D, N)
+    ms = linear2multi[(D, N)]::Vector{NTuple{N, Int}}
+    ls1 = multi2linear[(D, N1)]::Array{Int, N1}
+    ls2 = multi2linear[(D, N2)]::Array{Int, N2}
+    elts = Expr[]
+    for l in 1:L
+        m = l2m(ms, l)
+        expr = :0
+        ps = permutations(collect(1:N))
+        np = length(ps)
+        for p in ps
+            s = levicivita(p)
+            m′ = m[p]::NTuple{N, Int}
+            m1′ = m′[1:N1]::NTuple{N1, Int}
+            m2′ = m′[N1+1:N]::NTuple{N2, Int}
+            s1′, l1′ = m2l(ls1, m1′)
+            s2′, l2′ = m2l(ls2, m2′)
+            @assert abs(s1′) == abs(s2′) == 1
+            op = s * s1′ * s2′ > 0 ? :+ : :-
+            expr = :($op($expr, x.elts[$l1′] * y.elts[$l2′]))
+        end
+        push!(elts, :($expr / S($np)))
+    end
+    quote
+        Form{D, $N, S}(Vec(tuple($(elts...))))
+    end
+end
 
 end

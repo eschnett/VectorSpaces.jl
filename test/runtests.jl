@@ -3,6 +3,8 @@ using Test
 using Arbitrary
 using VectorSpaces
 
+
+
 I2 = Vec{2, Int}
 @test VectorSpaces.isvectorspace(I2)
 F2 = Vec{2, Float64}
@@ -313,5 +315,103 @@ end
         @test isequal(conj(conj(a)), a)
         isreal(a) = isequal(a, conj(a))
         @test isreal(conj(a) * a)
+    end
+end
+
+
+
+Dmax = 4
+for D in 0:Dmax, N in 0:D
+    @testset "Forms D=$D N=$N" begin
+        T = typeof(Form{D, N, BigInt}())
+        z = zero(T)
+
+        ntests = min(20, 1000 ÷ length(z))
+
+        as = arbitrary(T)
+        bs = arbitrary(T)
+        cs = arbitrary(T)
+        
+        for (a, b, c) in take(zip(as, bs, cs), ntests)
+        
+            # Commutativity
+            @test isequal(a + b, b + a)
+            # Associativity
+            @test isequal((a + b) + c, a + (b + c))
+            # Identity
+            @test isequal(z + a, a)
+            @test isequal(a + z, a)
+            # Inverse
+            @test isequal((-a) + a, z)
+            @test isequal(a + (-a), z)
+            @test isequal(-(-a), a)
+            # Subtraction
+            @test isequal(a - b, a + (-b))
+
+        end
+
+        S = Rational{BigInt}
+        e = Form{D, 0}(Vec((S(1),)))
+
+        begin
+            N1 = N
+            T1 = typeof(Form{D, N1, S}())
+
+            as = arbitrary(T1)
+
+            for a in take(as, ntests)
+
+                # Unit element
+                @test isequal(e ∧ a, a)
+                @test isequal(a ∧ e, a)
+
+            end
+        end
+
+        for N1 in 0:N
+            N2 = N - N1
+            T1 = typeof(Form{D, N1, S}())
+            T2 = typeof(Form{D, N2, S}())
+            
+            as = arbitrary(T1)
+            bs = arbitrary(T2)
+            ss = arbitrary(S)
+
+            for (a, b, s) in take(zip(as, bs, ss), ntests)
+                @test (a ∧ b) isa Form{D, N, S}
+
+                # Linearity
+                @test isequal((s * a) ∧ b, s * (a ∧ b))
+                @test isequal(a ∧ (s * b), s * (a ∧ b))
+
+                # Zero element
+                @test isequal(zero(T1) ∧ b, zero(T))
+                @test isequal(a ∧ zero(T2), zero(T))
+
+                # (Anti-)Commutativity
+                s = S((-1) ^ (N1 * N2))
+                @test isequal(a ∧ b, s * (b ∧ a))
+
+            end
+        end
+
+        for N1 in 0:N, N2 in 0:N-N1
+            N3 = N - N1 - N2
+            T1 = typeof(Form{D, N1, S}())
+            T2 = typeof(Form{D, N2, S}())
+            T3 = typeof(Form{D, N3, S}())
+            
+            as = arbitrary(T1)
+            bs = arbitrary(T2)
+            cs = arbitrary(T3)
+
+            for (a, b, c) in take(zip(as, bs, cs), ntests)
+
+                # Associativity
+                @test isequal((a ∧ b) ∧ c, a ∧ (b ∧ c))
+
+            end
+        end
+
     end
 end

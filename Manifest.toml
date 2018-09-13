@@ -1,13 +1,19 @@
 [[Arbitrary]]
 deps = ["IterTools", "Random", "Test"]
-git-tree-sha1 = "65cfe210c23577fbb0cec1ac7e12bf92aaf42851"
+git-tree-sha1 = "4c0a03e8eb3a625f9c348fa22bd6092b8d371f48"
 repo-rev = "master"
 repo-url = "https://github.com/eschnett/Arbitrary.jl.git"
 uuid = "c368a928-aaed-11e8-343e-9173ade0df7b"
-version = "0.1.1"
+version = "0.2.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[Combinatorics]]
+deps = ["LinearAlgebra", "Polynomials", "Test"]
+git-tree-sha1 = "50b3ae4d643dc27eaff69fb6be06ee094d5500c9"
+uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+version = "0.7.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -66,6 +72,12 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+
+[[Polynomials]]
+deps = ["LinearAlgebra", "SparseArrays", "Test"]
+git-tree-sha1 = "af883752c4935425a3ab30031a2069254c451b8b"
+uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+version = "0.5.0"
 
 [[Printf]]
 deps = ["Unicode"]
